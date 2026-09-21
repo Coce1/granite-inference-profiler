@@ -14,7 +14,7 @@ def run_benchmark(model_id="ibm-granite/granite-3.0-2b-instruct", device="cuda")
     model = AutoModelForCausalLM.from_pretrained(
         model_id, 
         device_map=device, 
-        torch_dtype=torch.float16 # Chargement standard en 16-bit
+        dtype=torch.float16 # Chargement standard en 16-bit
     )
 
     if device == "cuda":
