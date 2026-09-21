@@ -1,7 +1,7 @@
 # Variables
 PYTHON = python
 PIP = pip
-SCRIPT = Granite_Inference_Pipeline.py
+SCRIPT = src/Granite_Inference_Pipeline.py
 
 # Déclare les cibles qui ne sont pas des fichiers physiques
 .PHONY: all install run clean
