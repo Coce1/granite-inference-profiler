@@ -1,0 +1,32 @@
+# Environnements virtuels
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Fichiers de cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Dossiers et fichiers temporaires Visual Studio
+.vs/
+*.user
+*.suo
+*.dbmdl
+*.jfm
+
+# Fichiers de log et de base de données locaux
+*.log
+*.sqlite3
+
+# Modèles IA téléchargés (si tu les stockes localement plus tard)
+*.bin
+*.safetensors
+*.h5
+
+# Fichiers de configuration Visual Studio
+*.pyproj
+*.sln
+*.slnx
