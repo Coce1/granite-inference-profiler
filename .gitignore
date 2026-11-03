@@ -1,32 +1,35 @@
 # Environnements virtuels
+.venv/
 env/
 venv/
 ENV/
-env.bak/
-venv.bak/
 
-# Fichiers de cache Python
+# Secrets
+.env
+
+# Cache Python
 __pycache__/
 *.py[cod]
-*$py.class
 
-# Dossiers et fichiers temporaires Visual Studio
-.vs/
-*.user
-*.suo
-*.dbmdl
-*.jfm
+# Résultats de benchmark et traces de profilage
+results/
+*.csv
+*.png
+trace*.json
 
-# Fichiers de log et de base de données locaux
+# Logs
 *.log
-*.sqlite3
 
-# Modèles IA téléchargés (si tu les stockes localement plus tard)
+# Modèles téléchargés localement
 *.bin
 *.safetensors
 *.h5
 
-# Fichiers de configuration Visual Studio
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
 *.pyproj
 *.sln
 *.slnx
