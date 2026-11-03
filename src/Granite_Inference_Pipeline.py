@@ -128,10 +128,8 @@ def mb(n_bytes: float) -> float:
     return n_bytes / (1024**2)
 
 
-def cleanup(*objects) -> None:
-    """Libère les objets passés puis vide les caches (appelé dans `finally`)."""
-    for obj in objects:
-        del obj
+def cleanup() -> None:
+    """Vide les caches. À appeler APRÈS avoir mis à None les références au modèle chez l'appelant."""
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
@@ -401,7 +399,9 @@ def run_benchmark(args: argparse.Namespace) -> int:
               "ou utilise --dtype float16/bfloat16.", file=sys.stderr)
         return EXIT_OOM
     finally:
-        cleanup(model, tokenizer, inputs)
+        # Les références doivent être supprimées ICI (variables locales) avant de vider les caches.
+        tokenizer = model = inputs = None
+        cleanup()
 
 
 def main() -> None:
