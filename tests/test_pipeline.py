@@ -162,21 +162,43 @@ def test_resolve_cuda_requested_but_unavailable_exits(monkeypatch):
 @pytest.mark.parametrize("requested", ["auto", "bfloat16"])
 def test_resolve_cuda_without_bf16_uses_float16(monkeypatch, requested):
     monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
-    monkeypatch.setattr(torch.cuda, "is_bf16_supported", lambda: False)
+    monkeypatch.setattr(gip, "bf16_native", lambda: False)
     device, dtype = gip.resolve_device_dtype(SimpleNamespace(device="cuda", dtype=requested))
     assert (device, dtype) == ("cuda", torch.float16)
 
 
 def test_resolve_cuda_with_bf16_uses_bfloat16(monkeypatch):
     monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
-    monkeypatch.setattr(torch.cuda, "is_bf16_supported", lambda: True)
+    monkeypatch.setattr(gip, "bf16_native", lambda: True)
     device, dtype = gip.resolve_device_dtype(SimpleNamespace(device="cuda", dtype="auto"))
     assert (device, dtype) == ("cuda", torch.bfloat16)
 
 
+def test_bf16_native_false_without_cuda(monkeypatch):
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+    assert gip.bf16_native() is False
+
+
+@pytest.mark.parametrize("capability,expected", [((7, 5), False), ((8, 0), True), ((8, 9), True), ((9, 0), True)])
+def test_bf16_native_depends_on_compute_capability(monkeypatch, capability, expected):
+    """T4 = 7.5 -> pas de BF16 matériel ; A100 = 8.0, L4 = 8.9, H100 = 9.0 -> oui."""
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "get_device_capability", lambda *a, **k: capability)
+    assert gip.bf16_native() is expected
+
+
+def test_resolve_t4_like_gpu_picks_float16(monkeypatch):
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
+    monkeypatch.setattr(torch.cuda, "get_device_capability", lambda *a, **k: (7, 5))
+    # même si torch annonce un BF16 "émulé", on doit choisir float16 sur T4
+    monkeypatch.setattr(torch.cuda, "is_bf16_supported", lambda *a, **k: True, raising=False)
+    _, dtype = gip.resolve_device_dtype(SimpleNamespace(device="cuda", dtype="auto"))
+    assert dtype == torch.float16
+
+
 def test_resolve_explicit_float32_on_cuda_is_kept(monkeypatch):
     monkeypatch.setattr(torch.cuda, "is_available", lambda: True)
-    monkeypatch.setattr(torch.cuda, "is_bf16_supported", lambda: True)
+    monkeypatch.setattr(gip, "bf16_native", lambda: True)
     _, dtype = gip.resolve_device_dtype(SimpleNamespace(device="cuda", dtype="float32"))
     assert dtype == torch.float32
 
