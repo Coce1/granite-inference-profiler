@@ -60,7 +60,7 @@ def parse_args(argv=None) -> argparse.Namespace:
         "--dtype",
         default="auto",
         choices=["auto", *DTYPES],
-        help="auto = bfloat16 si supporté, sinon float16 sur GPU ; float32 sur CPU",
+        help="auto = bfloat16 sur GPU Ampere+ (A100, L4, RTX 30xx...), float16 sur GPU plus ancien (T4), float32 sur CPU",
     )
     p.add_argument("--prompt", default=DEFAULT_PROMPT)
     p.add_argument("--prompt-file", type=Path, help="Fichier texte contenant le prompt (prioritaire sur --prompt)")
@@ -89,6 +89,15 @@ def parse_args(argv=None) -> argparse.Namespace:
     return args
 
 
+def bf16_native() -> bool:
+    """BF16 matériel = GPU Ampere ou plus récent (compute capability >= 8).
+
+    torch.cuda.is_bf16_supported() renvoie True même sur T4 (capability 7.5) car le BF16 y est
+    émulé, donc plus lent que le FP16. On teste donc la capability pour ne pas se tromper.
+    """
+    return torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8
+
+
 def resolve_device_dtype(args: argparse.Namespace) -> tuple[str, torch.dtype]:
     if args.device == "auto":
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -101,7 +110,7 @@ def resolve_device_dtype(args: argparse.Namespace) -> tuple[str, torch.dtype]:
 
     if args.dtype == "auto":
         if device == "cuda":
-            dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+            dtype = torch.bfloat16 if bf16_native() else torch.float16
         else:
             dtype = torch.float32
     else:
@@ -110,8 +119,8 @@ def resolve_device_dtype(args: argparse.Namespace) -> tuple[str, torch.dtype]:
     if device == "cpu" and dtype == torch.float16:
         print("ATTENTION : float16 est mal supporté sur CPU, bascule en float32.")
         dtype = torch.float32
-    if device == "cuda" and dtype == torch.bfloat16 and not torch.cuda.is_bf16_supported():
-        print("ATTENTION : bfloat16 non supporté par ce GPU, bascule en float16.")
+    if device == "cuda" and dtype == torch.bfloat16 and not bf16_native():
+        print("ATTENTION : pas de bfloat16 matériel sur ce GPU (avant Ampere), bascule en float16.")
         dtype = torch.float16
     return device, dtype
 
