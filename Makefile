@@ -1,22 +1,35 @@
 # Variables
-PYTHON = python
-PIP = pip
+PYTHON ?= python3
+VENV   = .venv
+VPY    = $(VENV)/bin/python
 SCRIPT = src/Granite_Inference_Pipeline.py
+# Arguments supplémentaires : make run ARGS="--dtype bfloat16 --repeats 10"
+ARGS  ?=
 
-# Déclare les cibles qui ne sont pas des fichiers physiques
-.PHONY: all install run clean
+.PHONY: all venv install run profile clean distclean
 
-# Cible par défaut exécutée si on tape juste "make"
 all: install run
 
-# Installation des dépendances depuis le fichier requirements.txt
-install:
-	$(PIP) install -r requirements.txt
+# Environnement virtuel (évite de polluer le Python système)
+$(VENV)/bin/activate:
+	$(PYTHON) -m venv $(VENV)
 
-# Exécution du benchmark
+venv: $(VENV)/bin/activate
+
+install: venv
+	$(VPY) -m pip install --upgrade pip
+	$(VPY) -m pip install -r requirements.txt
+
 run:
-	$(PYTHON) $(SCRIPT)
+	$(VPY) $(SCRIPT) $(ARGS)
 
-# Nettoyage des dossiers de cache générés par Python
+profile:
+	$(VPY) $(SCRIPT) --profile $(ARGS)
+
+# Supprime tous les __pycache__ (récursif)
 clean:
-	$(PYTHON) -c "import os, shutil; [shutil.rmtree(d) for d in os.listdir('.') if d == '__pycache__']"
+	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+
+# clean + environnement virtuel + résultats
+distclean: clean
+	rm -rf $(VENV) results
